@@ -1,19 +1,20 @@
 import re
+from http import HTTPStatus
 
 from flask import jsonify, request
 
 from . import app, db
 from .error_handlers import InvalidAPIUsage
 from .models import URLMap
-from .utils import LINK_SYMBOLS, get_unique_short_id
+from .utils import LINK_SYMBOLS, MAX_LINK_LENGTH, get_unique_short_id
 
 
 @app.route('/api/id/<short_id>/', methods=['GET'])
 def get_original(short_id):
     url = URLMap.query.filter_by(short=short_id).first()
     if not url:
-        raise InvalidAPIUsage('Указанный id не найден', 404)
-    return jsonify({'url': url.original}), 200
+        raise InvalidAPIUsage('Указанный id не найден', HTTPStatus.NOT_FOUND)
+    return jsonify({'url': url.original}), HTTPStatus.OK
 
 
 @app.route('/api/id/', methods=['POST'])
@@ -27,7 +28,7 @@ def add_url():
     if short_link:
         if URLMap.query.filter_by(short=short_link).first():
             raise InvalidAPIUsage(f'Имя "{short_link}" уже занято.')
-        if len(short_link) > 16 or not re.match(LINK_SYMBOLS, short_link):
+        if len(short_link) > MAX_LINK_LENGTH or not re.match(LINK_SYMBOLS, short_link):
             raise InvalidAPIUsage('Указано недопустимое имя для короткой ссылки')
     else:
         short_link = get_unique_short_id()
@@ -38,4 +39,4 @@ def add_url():
     db.session.add(cut_link)
     db.session.commit()
 
-    return jsonify(cut_link.to_dict()), 201
+    return jsonify(cut_link.to_dict()), HTTPStatus.CREATED

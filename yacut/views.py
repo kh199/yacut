@@ -10,28 +10,19 @@ from .utils import get_unique_short_id
 def index_view():
     form = CutForm()
     if form.validate_on_submit():
-        short = form.custom_id.data
-        if short:
-            if URLMap.query.filter_by(short=short).first():
-                flash(f'Имя {short} уже занято!')
-                return render_template('yacut.html', form=form)
-            cut_link = URLMap(
-                original=form.original_link.data,
-                short=form.custom_id.data
-            )
-            db.session.add(cut_link)
-            db.session.commit()
-            return render_template('link.html', form=form, short=short)
-        else:
-            generated = get_unique_short_id()
-            cut_link = URLMap(
-                original=form.original_link.data,
-                short=generated
-            )
-            db.session.add(cut_link)
-            db.session.commit()
-            return render_template('link.html', form=form, short=generated)
-
+        short_link = form.custom_id.data
+        if URLMap.query.filter_by(short=short_link).first():
+            flash(f'Имя {short_link} уже занято!')
+            return render_template('yacut.html', form=form)
+        if not short_link:
+            short_link = get_unique_short_id()
+        cut_link = URLMap(
+            original=form.original_link.data,
+            short=short_link
+        )
+        db.session.add(cut_link)
+        db.session.commit()
+        return render_template('link.html', form=form, short=short_link)
     return render_template('yacut.html', form=form)
 
 
